@@ -3,16 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: azulbukh <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/09/03 15:48:55 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/09/06 16:40:13 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "SDL.h"
-#include "SDL_ttf.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
+
+#define WIN_X 1280
+#define WIN_Y 960
 
 typedef struct s_line
 {
@@ -22,6 +25,11 @@ typedef struct s_line
 	int y2;
 	struct s_line *next;
 }				t_line;
+
+typedef struct s_global
+{
+    int pos;
+}               t_global;
 
 t_line *create(int x1, int y1, int x2, int y2)
 {
@@ -54,44 +62,10 @@ void	push(t_line **head, int x1, int y1, int x2, int y2)
 
 	// if (!head || !x1 || !y1 || !y2 || x2)
 	// 	return ;
-	// new = create(x1, y1, x2, y2);
-	new = (t_line*)(malloc(sizeof(t_line)));
-	new->x1 = x1;
-	new->y1 = y1;
-	new->x2 = x2;
-	new->y2 = y2;
+	new = create(x1, y1, x2, y2);
 	new->next = *head;
 	*head = new;
-	// print(head);
 }
-// void push(node_t ** head, int val) {
-//     node_t * new_node;
-//     new_node = malloc(sizeof(node_t));
-
-//     new_node->val = val;
-//     new_node->next = *head;
-//     *head = new_node;
-// }
-
-// void	push(t_line **head, int x1, int y1, int x2, int y2)
-// {
-// 	t_line *cur;
-
-// 	cur = *head;
-// 	if (!head || !x1 || !y1 || !y2 || x2)
-// 		return ;
-// 	if (!cur)
-// 	{
-// 		printf("sd\n");
-// 		cur = create(x1, y1, x2, y2);
-// 		*head = cur;
-// 		return ;
-// 	}
-// 	while (cur->next)
-// 		cur = cur->next;
-// 	cur->next = create(x1, y1, x2, y2);
-// 	printf("[%d][%d]\t[%d][%d]\n", cur->next->x1, cur->next->y1, cur->next->x2, cur->next->y2);
-// }
 
 void	draw_lines(t_line *lines, SDL_Renderer *renderer)
 {
@@ -113,34 +87,32 @@ int main(int argc, char* argv[])
     int y2 = 0;
     int z = 0;
     int drawing = 0;
+    // linked list of walls with texture, height and cords.
     t_line *lines = NULL;
 	SDL_Event e;
-
-    // lines = (t_line*)(malloc(sizeof(t_line)));
+    // global position link to the lines and current mode
+    // 0 pick texture
+    // 1 set 2 lines 
+    // 2 set height of wall
+    t_global gl; 
 
     if (SDL_Init(SDL_INIT_VIDEO) == 0) {
         SDL_Window* window = NULL;
         SDL_Renderer* renderer = NULL;
-        // if (SDL_CreateWindowAndRenderer(640, 480, 0, &window, &renderer) == 0) {
-       	window = SDL_CreateWindow("WOLF_SDL", 100, 100, 1280, 960, SDL_WINDOW_SHOWN);
+       	window = SDL_CreateWindow("WOLF_SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIN_X, WIN_Y, SDL_WINDOW_SHOWN);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         SDL_bool done = SDL_FALSE;
         TTF_Init();
         TTF_Font *font = TTF_OpenFont("04B_30__.TTF", 25);
         // SDL_RenderClear(renderer);
-        while (!done) {
-                SDL_Event event;
-                SDL_Color color = { 255, 255, 255 };
-				SDL_Surface * surface = TTF_RenderText_Solid(font,
- 				"Welcome to Gigi Labs", color);
- 				SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, surface);
- 				SDL_RenderCopy(renderer, texture, NULL, NULL);
-				SDL_RenderPresent(renderer);
-                // SDL_RenderClear(renderer);
-                while (SDL_PollEvent(&event)) {
-                    // printf("[x1][%d]\t[y1][%d]\n", x2, y2);
-                    // printf("%hhu", event.button.button);
-                	// old_x = mouse_x;
+        while (!done) 
+        {
+            SDL_Event event;
+            // SDL_RenderClear(renderer);
+            while (SDL_PollEvent(&event)) {
+            // printf("[x1][%d]\t[y1][%d]\n", x2, y2);
+            // printf("%hhu", event.button.button);
+               	// old_x = mouse_x;
                 	// old_y = mouse_y;
                     if (event.type == SDL_QUIT) {
                     	// TTF_CLoseFont(font);
@@ -156,12 +128,9 @@ int main(int argc, char* argv[])
                                 x2 = x1;
                                 y2 = y1;
                                 drawing = 1;
-
                             }
                             if (x1 != x2)
                             {
-                                // SDL_SetRenderDrawColor(renderer, 255, 255, 255, 0);
-                                // SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
                                 if (z)
                                 {
                                     push(&lines, x1, y1, x2, y2);
@@ -173,18 +142,23 @@ int main(int argc, char* argv[])
                                     lines = create(x1, y1, x2, y2);
                                     z = 1;
                                 }
-                                // printf("drawing line\n");
                                 drawing = 0;
                             }
-                        // SDL_Log("Mouse Button 1 (left) is pressed.");
                         }
                     }
-					
-					// 	printf("[mouse_x][%d]\n[mouse_y][%d]\n", mouse_x, mouse_y);
           		}
-          		// SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
+
+                SDL_Color color = { 255, 255, 255 };
+				SDL_Surface * surface = TTF_RenderText_Solid(font,
+ 				"Pick texture", color);
+ 				SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, surface);
+ 				int x, y = 50;
+ 				SDL_QueryTexture(texture, NULL, NULL, &x, &y);
+ 				SDL_Rect rect = {100, 100, x, y};
+ 				SDL_RenderCopy(renderer, texture, NULL, &rect);
+				// SDL_RenderPresent(renderer);
 
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 0);
                 //for loop for elemnts in struct;
