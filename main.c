@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/09/06 18:15:47 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/09/06 20:49:19 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,17 @@
 #include <SDL_image.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define WIN_X 1900
 #define WIN_Y 1000
+
+//3rd bar
+#define BAR_X 1400
+#define BAR_Y 100
+#define BAR_W 400
+#define BAR_H 800
 
 typedef struct s_line
 {
@@ -35,8 +43,84 @@ typedef struct s_global
 	int pos;
 	int current_texture;
 	SDL_Texture *texture;
-	SDL_Rect texture_rect[9];
+	SDL_Rect texture_rect[18];
+	TTF_Font *font;
 }               t_global;
+
+void list_remove(t_line **list, t_line *node)
+{
+	t_line *tmp = NULL;
+	if (list == NULL || *list == NULL || node == NULL) return;
+
+	if (*list == node) {
+		*list = (*list)->next;
+		free(node);
+		node = NULL;
+	} else {
+		tmp = *list;
+		while (tmp->next && tmp->next != node) tmp = tmp->next;
+		if (tmp->next) {
+			tmp->next = node->next;
+			free(node);
+			node = NULL;
+		}
+	}
+}
+
+void list_destroy(t_line **list)
+{
+	if (list == NULL) return;
+	while (*list != NULL) {
+		list_remove(list, *list);
+	}
+}
+
+void	itoa_isnegative(int *n, int *negative)
+{
+	if (*n < 0)
+	{
+		*n *= -1;
+		*negative = 1;
+	}
+}
+
+char	*ft_itoa(int n)
+{
+	int		tmpn;
+	int		len;
+	int		negative;
+	char	*str;
+
+	if (n == -2147483648)
+		return (strdup("-2147483648"));
+	tmpn = n;
+	len = 2;
+	negative = 0;
+	itoa_isnegative(&n, &negative);
+	while (tmpn /= 10)
+		len++;
+	len += negative;
+	if ((str = (char*)malloc(sizeof(char) * len)) == NULL)
+		return (NULL);
+	str[--len] = '\0';
+	while (len--)
+	{
+		str[len] = n % 10 + '0';
+		n = n / 10;
+	}
+	if (negative)
+		str[0] = '-';
+	return (str);
+}
+
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
 
 void    set_rect_for_texture(t_global *global, SDL_Texture *texture)
 {
@@ -45,21 +129,21 @@ void    set_rect_for_texture(t_global *global, SDL_Texture *texture)
 	int y;
 
 	i = 0;
-	x = 1000;
-	y = 100;
-	while (i < 9)
+	x = 975;
+	y = 150;
+	while (i < 18)
 	{
-		if (i == 3 || i == 6 || i == 9)
+		if (i == 3 || i == 6 || i == 9 || i == 12 || i == 15)
 		{
-			y += 300;
-			x = 1000;
+			y += 125;
+			x = 975;
 		}
 		global->texture_rect[i].x = x;  //the x coordinate
 		global->texture_rect[i].y = y; // the y coordinate
-		global->texture_rect[i].w = 200; //the width of the texture
-		global->texture_rect[i].h = 200; //the height of the texture
+		global->texture_rect[i].w = 100; //the width of the texture
+		global->texture_rect[i].h = 100; //the height of the texture
 		SDL_RenderCopy(global->renderer, texture, NULL, &global->texture_rect[i]);
-		x += 300;
+		x += 125;
 		i++;
 	}
 }
@@ -100,14 +184,64 @@ void	push(t_line **head, int x1, int y1, int x2, int y2)
 	*head = new;
 }
 
+void	put_text(char *s, int ys, t_global global, int xs)
+{
+	SDL_Color color = { 255, 255, 255 };
+	SDL_Surface * surface = TTF_RenderText_Solid(global.font, s, color);
+ 	global.texture = SDL_CreateTextureFromSurface(global.renderer, surface);
+ 	int x, y = 30;
+ 	SDL_QueryTexture(global.texture, NULL, NULL, &x, &y);
+ 	SDL_Rect rect = {xs, ys, x, y};
+ 	SDL_RenderCopy(global.renderer, global.texture, NULL, &rect);
+	free(s);
+	s = NULL;
+	SDL_FreeSurface(surface);
+}
+
 void	draw_lines_to_menu(t_line *lines, t_global global)
 {
-	SDL_Rect rec;
+	t_line *cur;
+	int ys;
 
-	rec.x = 100;
-	rec.y = 300;
-	rec.w = 800;
-	rec.h = 600;
+	ys = BAR_Y;
+	cur = lines;
+	while (cur)
+	{
+		put_text(ft_itoa(cur->x1), ys, global, BAR_X);
+		put_text(ft_itoa(cur->y1), ys, global, BAR_X + 100);
+
+		put_text(ft_itoa(cur->x2), ys, global, BAR_X + 200);
+		put_text(ft_itoa(cur->y2), ys, global, BAR_X + 300);
+		cur = cur->next;
+		ys += 50;
+	}
+}
+
+void	draw_lines_rect(t_line *lines, t_global global)
+{
+	//rec left
+	SDL_Rect rec1;
+
+	rec1.x = 100;
+	rec1.y = 100;
+	rec1.w = 800;
+	rec1.h = 800;
+	SDL_RenderDrawRect(global.renderer, &rec1);
+
+	//rec middle
+	SDL_Rect bar;
+	bar.x = 950;
+	bar.y = 100;
+	bar.w = 400;
+	bar.h = 800;
+	SDL_RenderDrawRect(global.renderer, &bar);
+
+	//rec right
+	SDL_Rect rec;
+	rec.x = 1400;
+	rec.y = 100;
+	rec.w = 400;
+	rec.h = 800;
 	SDL_RenderDrawRect(global.renderer, &rec);
 }
 
@@ -147,8 +281,16 @@ int main(int argc, char* argv[])
 		global.renderer = SDL_CreateRenderer(global.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 		SDL_bool done = SDL_FALSE;
 		TTF_Init();
-		TTF_Font *font = TTF_OpenFont("04B_30__.TTF", 25);
+		global.font = TTF_OpenFont("font.ttf", 25);
 		// SDL_RenderClear(renderer);
+		SDL_Color color = { 255, 255, 255 };
+ 		SDL_Surface * surface = TTF_RenderText_Solid(global.font,
+ 				"Pick texture", color);
+		global.texture = SDL_CreateTextureFromSurface(global.renderer, surface);
+ 		int x, y = 50;
+ 		SDL_QueryTexture(global.texture, NULL, NULL, &x, &y);
+ 		SDL_Rect rect = {100, 100, x, y};
+
 		while (!done) 
 		{
 			SDL_Event event;
@@ -160,6 +302,7 @@ int main(int argc, char* argv[])
 					// old_y = mouse_y;
 					if (event.type == SDL_QUIT) {
 						// TTF_CLoseFont(font);
+						list_destroy(&lines);
 						TTF_Quit(); // destroy ttf
 						done = SDL_TRUE;
 					}
@@ -167,6 +310,10 @@ int main(int argc, char* argv[])
 					{
 						if (SDL_GetMouseState(&x1, &y1) & SDL_BUTTON(SDL_BUTTON_LEFT))
 						{
+							if (x1 >= 900 || x2 >= 900)
+								break ;
+							if (y1 >= 900 || y2 >= 900)
+								break ;
 							if (!drawing)
 							{
 								x2 = x1;
@@ -194,7 +341,7 @@ int main(int argc, char* argv[])
 				SDL_SetRenderDrawColor(global.renderer, 0, 0, 0, 255);
 				SDL_RenderClear(global.renderer);
 				
-				// texture
+				// // texture
 				SDL_Texture *texture = IMG_LoadTexture(global.renderer, "texture0.jpg");
 				if (texture == NULL)
 				{
@@ -202,29 +349,20 @@ int main(int argc, char* argv[])
 					exit(1);
 				}
 				set_rect_for_texture(&global, texture);
-				
-				SDL_Color color = { 255, 255, 255 };
-				SDL_Surface * surface = TTF_RenderText_Solid(font,
- 				"Pick texture", color);
- 				global.texture = SDL_CreateTextureFromSurface(global.renderer, surface);
- 				int x, y = 50;
- 				SDL_QueryTexture(global.texture, NULL, NULL, &x, &y);
- 				SDL_Rect rect = {100, 100, x, y};
  				SDL_RenderCopy(global.renderer, global.texture, NULL, &rect);
-				// SDL_RenderPresent(renderer);
 
 				SDL_SetRenderDrawColor(global.renderer, 255, 255, 255, 0);
-				//for loop for elemnts in struct;
+				// //for loop for elemnts in struct;
 				draw_lines(lines, global.renderer);
 				
-
-				draw_lines_to_menu(lines, global);
+				// draw_lines_to_menu(lines, global);
+				draw_lines_rect(lines, global);
 
 				SDL_RenderPresent(global.renderer);
 			}
 		// }
 		
-
+		SDL_FreeSurface(surface);
 		if (global.renderer) {
 			SDL_DestroyRenderer(global.renderer);
 		}
@@ -233,5 +371,6 @@ int main(int argc, char* argv[])
 		}
 	}
 	SDL_Quit();
+	// while (1);	
 	return 0;
 }
