@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/09/10 19:23:22 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/09/10 19:26:14 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -367,11 +367,7 @@ void			global_pos_2_write(t_global *global)
 void			event(t_global *global)
 {
 	if (global->event.type == SDL_QUIT)
-	{
-		list_destroy(&global->lines);
-		TTF_Quit();
 		global->done = SDL_TRUE;
-	}
 	if (global->pos == 0)
 		pos_0_pick_tex(global);
 	else if (global->pos == 1)
@@ -426,6 +422,9 @@ int				main(int argc, char *argv[])
 			SDL_DestroyWindow(global.window);
 		}
 	}
+	if (global.lines->x1)
+		list_destroy(&global.lines);
+	TTF_Quit();
 	SDL_Quit();
 	system("leaks a.out");
 	return (0);
