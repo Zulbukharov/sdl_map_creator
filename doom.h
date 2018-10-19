@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   doom.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: azulbukh <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/10 19:03:36 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/09/10 19:03:38 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/19 20:33:26 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 # include <string.h>
 # include <stdlib.h>
 # include <fcntl.h>
+# include "libft/libft.h"
 
 # define WIN_X 1900
 # define WIN_Y 1000
@@ -47,7 +48,7 @@ typedef	struct		s_line
 	int				y1;
 	int				x2;
 	int				y2;
-	int				texture_number;
+	unsigned int	texture_number;
 	int				height;
 	struct s_line	*next;
 }					t_line;
@@ -58,7 +59,8 @@ typedef	struct		s_global
 	SDL_Renderer	*renderer;
 	int				pos;
 	int				current_texture;
-	SDL_Texture		*texture;
+	SDL_Texture		*texture[8];
+	SDL_Texture		*textur;
 	SDL_Rect		texture_rect[18];
 	TTF_Font		*font;
 	SDL_bool		done;
@@ -71,6 +73,11 @@ typedef	struct		s_global
 	int				x2;
 	int				y2;
 	t_line			*lines;
+
+	int				fd;
+	int				mode; // 10 or 50
+	int				xmode; //120 80 || 24 16
+	int				ymode;
 }					t_global;
 
 #endif
