@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/10 19:03:36 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/19 20:33:26 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/20 19:19:15 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,8 @@ typedef	struct		s_global
 	int				y2;
 	t_line			*lines;
 
+	t_line			*to_edit;
+	unsigned int	**map;
 	int				fd;
 	int				mode; // 10 or 50
 	int				xmode; //120 80 || 24 16
