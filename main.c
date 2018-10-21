@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/21 16:25:36 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/21 20:51:41 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,7 +118,7 @@ void			set_rect_for_texture(t_global *global)
 		global->texture_rect[i].y = y;
 		global->texture_rect[i].w = 75;
 		global->texture_rect[i].h = 75;
-		if (i < 8)//costyl uberi
+		if (i < 16)//costyl uberi
 		SDL_RenderCopy(global->renderer,
 			global->texture[i], NULL, &global->texture_rect[i]);
 		x += 100;
@@ -287,11 +287,11 @@ void			make_exit(t_line **lines, t_global *global)
 				ft_putstr_fd("1", global->fd);
 			else if ((j == 0 || j == global->mode - 1) && ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
 				ft_putstr_fd("1", global->fd);
-			else if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7)
+			else if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 16)
 				ft_putstr_fd("0", global->fd);
 			else
 			{
-				ft_putnbr_fd(global->map[j][i] >> 16, global->fd);
+				ft_putchar_fd((char)(global->map[j][i] >> 16) + '0', global->fd);
 			}
 		}
 		ft_putstr_fd("\n", global->fd);
@@ -301,7 +301,8 @@ void			make_exit(t_line **lines, t_global *global)
 	{
 		for(int j= 0; j < global->mode; j++)
 		{
-			if ((global->map[j][i] & 0xFFFF) <= 0 || (global->map[j][i] & 0xFFFF) > 100)
+			if ((global->map[j][i] & 0xFFFF) <= 0 || (global->map[j][i] & 0xFFFF) > 300
+				|| (global->map[j][i]) >> 16 >= 8)
 			{
 				ft_putstr_fd("0", global->fd);
 				ft_putstr_fd(" ", global->fd);
@@ -430,6 +431,23 @@ void			add_texture(t_global *global)
 		}
 		i++;
 	}
+	while (i < 16)
+	{
+		n = ft_itoa(i);
+		tmp = ft_strjoin("texture/texture", n);
+		tmp1 = ft_strjoin(tmp, ".png");
+
+		global->texture[i] = IMG_LoadTexture(global->renderer, tmp1);
+		free(tmp);
+		free(tmp1);
+		free(n);
+		if (global->texture[i] == NULL)
+		{
+			fprintf(stderr, "Texture error png");
+			exit(1);
+		}
+		i++;
+	}
 
 }
 
@@ -443,7 +461,7 @@ void			init_sdl(t_global *global)
 		for (int j = 0; j < global->mode; j++)
 			global->map[i][j] = 0;
 	}
-	global->window = SDL_CreateWindow("WOLF_SDL",
+	global->window = SDL_CreateWindow("MAP",
 	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 	WIN_X, WIN_Y, SDL_WINDOW_SHOWN);
 	global->renderer = SDL_CreateRenderer(global->window,
@@ -453,7 +471,6 @@ void			init_sdl(t_global *global)
 	global->y1 = 0;
 	global->x2 = 110;
 	global->y2 = 110;
-	global->z = 0;
 	global->drawing = 0;
 	TTF_Init();
 	global->font = TTF_OpenFont("font.ttf", 50);
@@ -522,7 +539,9 @@ void			global_pos_2_write(t_global *global)
 	if (strcmp(SDL_GetKeyName(global->event.key.keysym.sym),
 	"Return") == 0)
 	{
-		global->lines->height = atoi(global->text);
+		ft_putnbr(abs(atoi(global->text)));
+		if ((global->lines->height = abs(atoi(global->text))) > 300)
+			global->lines->height = 300;
 		if (global->pos != 6)
 			global->lines->texture_number = global->current_texture;
 		bzero(global->text, strlen(global->text));
@@ -654,7 +673,7 @@ void			event(t_global *global)
 		pos_1_set_dot(global);
 		redraw(global);
 	}
-	else if ((global->pos == 2 || global->pos == 6) && strlen(global->text) <= 3)
+	else if ((global->pos == 2 || global->pos == 6) && strlen(global->text) <= 2)
 	{
 		if (global->event.type == SDL_TEXTINPUT)
 		{
@@ -729,12 +748,6 @@ void	free_words(char **words)
 	words = NULL;
 }
 
-// void			validate_cords(char **cords, t_global *global)
-// {
-// 	if ((words_len(cords) != global->mode))
-// 		return ;
-// }
-
 void			create_file(char *s, t_global *global)
 {
 	if (!*s)
@@ -758,7 +771,6 @@ void			edit_file(char *s, t_global *global)
 	global->fd = open(s, O_RDONLY);
 	ft_get_next_line(global->fd, &line);
 	cords = ft_strsplit(line, ' ');
-	// validate_cords(cords, global);
 	if (words_len(cords) != 2)
 	{
 		ft_putstr_fd("[ERROR][WRONG FIRST LINE]\n", 2);
@@ -769,6 +781,8 @@ void			edit_file(char *s, t_global *global)
 	lines = ft_atoi(cords[0]);
 	free_words(cords);
 	free(line);
+	if (lines)
+		global->z = 1;
 	while(lines--)
 	{
 		if (!ft_get_next_line(global->fd, &line) && lines)
@@ -797,6 +811,7 @@ int				main(int ac, char **av)
 {
 	t_global global;
 
+	global.z = 0;
 	if (ac == 4)
 	{
 		if (ft_atoi(av[1]) == 10 || ft_atoi(av[1]) == 50)
