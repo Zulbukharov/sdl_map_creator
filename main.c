@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/21 00:01:45 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/21 16:25:36 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -283,7 +283,11 @@ void			make_exit(t_line **lines, t_global *global)
 	{
 		for(int j= 0; j < global->mode; j++)
 		{
-			if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7)
+			if ((i == 0 || i == global->mode - 1) && ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
+				ft_putstr_fd("1", global->fd);
+			else if ((j == 0 || j == global->mode - 1) && ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
+				ft_putstr_fd("1", global->fd);
+			else if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7)
 				ft_putstr_fd("0", global->fd);
 			else
 			{
@@ -725,30 +729,11 @@ void	free_words(char **words)
 	words = NULL;
 }
 
-void			validate_cords(char **cords, t_global *global)
-{
-	if ((words_len(cords) != global->mode))
-		return ;
-}
-
-void			edit_file(char *s, t_global *global)
-{
-	char *line;
-	char **cords;
-
-	line = NULL;
-	cords = NULL;
-	if (!*s)
-		exit(0);
-	global->fd = open(s, O_RDONLY);
-	while (ft_get_next_line(global->fd, &line))
-	{
-		cords = ft_strsplit(line, ' ');
-		validate_cords(cords, global);
-		free_words(cords);
-		free(line);
-	}
-}
+// void			validate_cords(char **cords, t_global *global)
+// {
+// 	if ((words_len(cords) != global->mode))
+// 		return ;
+// }
 
 void			create_file(char *s, t_global *global)
 {
@@ -759,18 +744,67 @@ void			create_file(char *s, t_global *global)
 		exit(0);
 }
 
+void			edit_file(char *s, t_global *global)
+{
+	char *line;
+	char **cords;
+	int	lines;
+	t_line	wall;
+
+	line = NULL;
+	cords = NULL;
+	if (!*s)
+		exit(0);
+	global->fd = open(s, O_RDONLY);
+	ft_get_next_line(global->fd, &line);
+	cords = ft_strsplit(line, ' ');
+	// validate_cords(cords, global);
+	if (words_len(cords) != 2)
+	{
+		ft_putstr_fd("[ERROR][WRONG FIRST LINE]\n", 2);
+		free_words(cords);
+		free(line);
+		exit(0);
+	}
+	lines = ft_atoi(cords[0]);
+	free_words(cords);
+	free(line);
+	while(lines--)
+	{
+		if (!ft_get_next_line(global->fd, &line) && lines)
+			exit(0);
+		cords = ft_strsplit(line, ' ');
+		if (words_len(cords) != 6)
+		{
+			free_words(cords);
+			free(line);
+			exit(0);
+		}
+		ft_putnbr(words_len(cords));
+		wall.texture_number = (ft_atoi(cords[0]));
+		wall.x1 = ft_atoi(cords[1]);
+		wall.y1 = ft_atoi(cords[2]);
+		wall.x2 = ft_atoi(cords[3]);
+		wall.y2 = ft_atoi(cords[4]);
+		wall.height = ft_atoi(cords[5]);
+		push_to_front(&global->lines, &wall);
+		free_words(cords);
+		free(line);
+	}
+}
+
 int				main(int ac, char **av)
 {
 	t_global global;
 
 	if (ac == 4)
 	{
-		if(ft_atoi(av[1]) == 10 || ft_atoi(av[1]) == 50)
+		if (ft_atoi(av[1]) == 10 || ft_atoi(av[1]) == 50)
 			global.mode = ft_atoi(av[1]);
-		if(ft_strcmp(av[2], "-n") == 0)
+		if (ft_strcmp(av[2], "-n") == 0)
 			create_file(av[3], &global);
-		// if (ft_strcmp(av[2], "-e") == 0)
-			// edit_file(av[3], &global);
+		else if (ft_strcmp(av[2], "-e") == 0)
+			edit_file(av[3], &global);
 		else
 			return (0);
 	}
