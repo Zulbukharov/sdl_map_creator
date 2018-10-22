@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/10 19:03:36 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/21 20:16:57 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/22 16:16:39 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,12 @@
 # define MAP_REC_Y 100
 # define MAP_REC_W 1300
 # define MAP_REC_H 900
+
+typedef struct		s_tools
+{
+	int				x;
+	int				y;
+}					t_tools;
 
 typedef	struct		s_rect
 {
@@ -77,8 +83,8 @@ typedef	struct		s_global
 	t_line			*to_edit;
 	unsigned int	**map;
 	int				fd;
-	int				mode; // 10 or 50
-	int				xmode; //120 80 || 24 16
+	int				mode;
+	int				xmode;
 	int				ymode;
 }					t_global;
 

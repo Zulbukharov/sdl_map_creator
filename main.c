@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/22 15:59:29 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/22 18:32:21 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,9 +118,9 @@ void			set_rect_for_texture(t_global *global)
 		global->texture_rect[i].y = y;
 		global->texture_rect[i].w = 75;
 		global->texture_rect[i].h = 75;
-		if (i < 16)//costyl uberi
-		SDL_RenderCopy(global->renderer,
-			global->texture[i], NULL, &global->texture_rect[i]);
+		if (i < 16)
+			SDL_RenderCopy(global->renderer,
+		global->texture[i], NULL, &global->texture_rect[i]);
 		x += 100;
 		i++;
 	}
@@ -191,25 +191,33 @@ int				in_save_to_file(int x, int y)
 		return (0);
 }
 
-int				dot_in_tex(int x, int y, t_global global, int x1, int y1)
+int				dot_in_tex(int x, int y, t_global global, t_tools ij)
 {
-	if ((x > (y1 * global.ymode)) && (y > (x1 * global.xmode))
-		&& (x < (y1 * global.ymode + global.ymode)) && y < (x1 * global.xmode + global.xmode))
+	if ((x > (ij.y * global.ymode)) && (y > (ij.x * global.xmode))
+		&& (x < (ij.y * global.ymode + global.ymode)) && y <
+		(ij.x * global.xmode + global.xmode))
 	{
 		return (1);
 	}
 	return (0);
 }
 
-int				chech_for_dot(t_line *cur, int i, int j, t_global *global)
+int				chech_for_dot(t_line *cur, t_tools ij, t_global *global)
 {
+	float	t;
+	int		x;
+	int		y;
+
 	while (cur)
 	{
-		for (float t=0.; t<1.; t+=.01) {
-			int x = cur->x1*(1.-t) + cur->x2*t;
-			int y = cur->y1*(1.-t) + cur->y2*t;
-			if (dot_in_tex(x, y, *global, i, j) == 1)
+		t = 0;
+		while (t < 1)
+		{
+			x = cur->x1 * (1. - t) + cur->x2 * t;
+			y = cur->y1 * (1. - t) + cur->y2 * t;
+			if (dot_in_tex(x, y, *global, ij) == 1)
 				return (cur->texture_number);
+			t += .01;
 		}
 		cur = cur->next;
 	}
@@ -218,17 +226,20 @@ int				chech_for_dot(t_line *cur, int i, int j, t_global *global)
 
 void			push_tex_map(t_line **lines, t_global *global)
 {
-	t_line *cur;
-	int g;
+	t_line	*cur;
+	int		g;
+	t_tools	ij;
 
+	ij.x = 0;
 	cur = *lines;
 	g = 0;
-	for (int i = 1; i <= global->mode; i++)
+	while (++ij.x <= global->mode)
 	{
-		for(int j = 1; j <= global->mode; j++)
+		ij.y = 0;
+		while (++ij.y <= global->mode)
 		{
 			cur = *lines;
-			if ((g = chech_for_dot(cur, i, j, global)) >= 0)
+			if ((g = chech_for_dot(cur, ij, global)) >= 0)
 				ft_putnbr_fd(g, global->fd);
 			else
 				ft_putstr_fd(" ", global->fd);
@@ -239,7 +250,7 @@ void			push_tex_map(t_line **lines, t_global *global)
 
 int				number_of_lines(t_line *cur)
 {
-	int i;
+	int		i;
 
 	i = 0;
 	while (cur)
@@ -248,6 +259,81 @@ int				number_of_lines(t_line *cur)
 		cur = cur->next;
 	}
 	return (i);
+}
+
+void			add_head(t_global *global, t_line *cur)
+{
+	ft_putnbr_fd(cur->texture_number, global->fd);
+	ft_putstr_fd(" ", global->fd);
+	ft_putnbr_fd(cur->x1, global->fd);
+	ft_putstr_fd(" ", global->fd);
+	ft_putnbr_fd(cur->y1, global->fd);
+	ft_putstr_fd(" ", global->fd);
+	ft_putnbr_fd(cur->x2, global->fd);
+	ft_putstr_fd(" ", global->fd);
+	ft_putnbr_fd(cur->y2, global->fd);
+	ft_putstr_fd(" ", global->fd);
+	if (abs(cur->height) > 300)
+		ft_putnbr_fd(300, global->fd);
+	else
+		ft_putnbr_fd(abs(cur->height), global->fd);
+	ft_putstr_fd("\n", global->fd);
+}
+
+void			push_cord(t_global *global)
+{
+	int i;
+	int j;
+
+	i = -1;
+	while (++i < global->mode)
+	{
+		j = -1;
+		while (++j < global->mode)
+		{
+			if ((i == 0 || i == global->mode - 1) &&
+			((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
+				ft_putstr_fd("1", global->fd);
+			else if ((j == 0 || j == global->mode - 1) &&
+			((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
+				ft_putstr_fd("1", global->fd);
+			else if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i]
+			>> 16) > 16)
+				ft_putstr_fd("0", global->fd);
+			else
+				ft_putchar_fd((char)(global->map[j][i] >> 16) + '0',
+				global->fd);
+		}
+		ft_putstr_fd("\n", global->fd);
+	}
+}
+
+void			push_height(t_global *global)
+{
+	int i;
+	int j;
+
+	i = -1;
+	while (++i < global->mode)
+	{
+		j = -1;
+		while (++j < global->mode)
+		{
+			if ((global->map[j][i] & 0xFFFF) <= 0 ||
+			(global->map[j][i] & 0xFFFF) > 300
+				|| (global->map[j][i]) >> 16 >= 8)
+			{
+				ft_putstr_fd("0", global->fd);
+				ft_putstr_fd(" ", global->fd);
+			}
+			else
+			{
+				ft_putnbr_fd(global->map[j][i] & 0xFFFF, global->fd);
+				ft_putstr_fd(" ", global->fd);
+			}
+		}
+		ft_putstr_fd("\n", global->fd);
+	}
 }
 
 void			make_exit(t_line **lines, t_global *global)
@@ -264,60 +350,13 @@ void			make_exit(t_line **lines, t_global *global)
 	}
 	while (cur)
 	{
-		ft_putnbr_fd(cur->texture_number, global->fd);
-		ft_putstr_fd(" ", global->fd);
-		ft_putnbr_fd(cur->x1, global->fd);
-		ft_putstr_fd(" ", global->fd);
-		ft_putnbr_fd(cur->y1, global->fd);
-		ft_putstr_fd(" ", global->fd);
-		ft_putnbr_fd(cur->x2, global->fd);
-		ft_putstr_fd(" ", global->fd);
-		ft_putnbr_fd(cur->y2, global->fd);
-		ft_putstr_fd(" ", global->fd);
-		if (abs(cur->height) > 300)
-			ft_putnbr_fd(300, global->fd);
-		else
-			ft_putnbr_fd(abs(cur->height), global->fd);
-		ft_putstr_fd("\n", global->fd);
+		add_head(global, cur);
 		cur = cur->next;
 	}
 	ft_putstr_fd("\n", global->fd);
-	for(int i = 0; i < global->mode; i++)
-	{
-		for(int j= 0; j < global->mode; j++)
-		{
-			if ((i == 0 || i == global->mode - 1) && ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
-				ft_putstr_fd("1", global->fd);
-			else if ((j == 0 || j == global->mode - 1) && ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 7))
-				ft_putstr_fd("1", global->fd);
-			else if ((global->map[j][i]) >> 16 <= 0 || (global->map[j][i] >> 16) > 16)
-				ft_putstr_fd("0", global->fd);
-			else
-			{
-				ft_putchar_fd((char)(global->map[j][i] >> 16) + '0', global->fd);
-			}
-		}
-		ft_putstr_fd("\n", global->fd);
-	}
+	push_cord(global);
 	ft_putstr_fd("\n", global->fd);
-	for(int i = 0; i < global->mode; i++)
-	{
-		for(int j= 0; j < global->mode; j++)
-		{
-			if ((global->map[j][i] & 0xFFFF) <= 0 || (global->map[j][i] & 0xFFFF) > 300
-				|| (global->map[j][i]) >> 16 >= 8)
-			{
-				ft_putstr_fd("0", global->fd);
-				ft_putstr_fd(" ", global->fd);
-			}
-			else
-			{
-				ft_putnbr_fd(global->map[j][i] & 0xFFFF, global->fd);
-				ft_putstr_fd(" ", global->fd);
-			}
-		}
-		ft_putstr_fd("\n", global->fd);
-	}
+	push_height(global);
 }
 
 void			draw_lines_rect(t_global global)
@@ -343,34 +382,50 @@ void			draw_lines_rect(t_global global)
 
 void			dot_in_texture(int x, int y, t_global *global, t_line *cur)
 {
-	SDL_Rect *link;
+	SDL_Rect	*link;
+	t_tools		xy;
 
-	for (int x1 = 100; x1 < 1300; x1 += global->xmode)
-		for (int y1 = 100; y1 < 900; y1+= global->ymode)
+	xy.x = 100;
+	while (xy.x < 1300)
+	{
+		xy.y = 100;
+		while (xy.y < 900)
 		{
-			if (x > x1 && y > y1
-				&& x < x1 + global->xmode && y < y1 + global->ymode)
+			if (x > xy.x && y > xy.y
+				&& x < xy.x + global->xmode && y < xy.y + global->ymode)
 			{
-				link = create_rect(x1, y1, global->xmode, global->ymode);
+				link = create_rect(xy.x, xy.y, global->xmode, global->ymode);
 				SDL_RenderCopy(global->renderer,
 			global->texture[cur->texture_number], NULL, link);
-				global->map[(x1 - 100) / global->xmode][(y1 - 100) / global->ymode] = ((((unsigned int)(cur->texture_number + 1)) << 16) | (unsigned int)(cur->height));
+				global->map[(xy.x - 100) / global->xmode][(xy.y - 100) /
+				global->ymode] = ((((unsigned int)(cur->texture_number + 1))
+				<< 16) |
+				(unsigned int)(cur->height));
 				free(link);
 			}
+			xy.y += global->ymode;
 		}
+		xy.x += global->xmode;
+	}
 }
 
 void			draw_lines(t_global global)
 {
-	t_line *cur;
+	t_line	*cur;
+	int		x;
+	int		y;
+	float	t;
 
 	cur = global.lines;
 	while (cur)
 	{
-		for (float t=0.; t<1.; t+=.01) {
-			int x = cur->x1*(1.-t) + cur->x2*t;
-			int y = cur->y1*(1.-t) + cur->y2*t;
+		t = 0;
+		while (t < 1)
+		{
+			x = cur->x1 * (1. - t) + cur->x2 * t;
+			y = cur->y1 * (1. - t) + cur->y2 * t;
 			dot_in_texture(x, y, &global, cur);
+			t += .01;
 		}
 		cur = cur->next;
 	}
@@ -409,37 +464,17 @@ int				dot_in_map(int x1, int y1)
 		return (1);
 }
 
-void			add_texture(t_global *global)
+void			add_texture2(t_global *global, int i)
 {
-	int i;
 	char *tmp;
 	char *tmp1;
 	char *n;
 
-	i = 0;
-	while (i < 8)
-	{
-		n = ft_itoa(i);
-		tmp = ft_strjoin("texture/texture", n);
-		tmp1 = ft_strjoin(tmp, ".jpg");
-
-		global->texture[i] = IMG_LoadTexture(global->renderer, tmp1);
-		free(tmp);
-		free(tmp1);
-		free(n);
-		if (global->texture[i] == NULL)
-		{
-			fprintf(stderr, "Texture error");
-			exit(1);
-		}
-		i++;
-	}
 	while (i < 16)
 	{
 		n = ft_itoa(i);
 		tmp = ft_strjoin("texture/texture", n);
 		tmp1 = ft_strjoin(tmp, ".png");
-
 		global->texture[i] = IMG_LoadTexture(global->renderer, tmp1);
 		free(tmp);
 		free(tmp1);
@@ -451,27 +486,57 @@ void			add_texture(t_global *global)
 		}
 		i++;
 	}
+}
 
+void			add_texture(t_global *global)
+{
+	int		i;
+	char	*tmp;
+	char	*tmp1;
+	char	*n;
+
+	i = -1;
+	global->pos = 0;
+	global->x1 = 0;
+	global->y1 = 0;
+	while (++i < 8)
+	{
+		n = ft_itoa(i);
+		tmp = ft_strjoin("texture/texture", n);
+		tmp1 = ft_strjoin(tmp, ".jpg");
+		global->texture[i] = IMG_LoadTexture(global->renderer, tmp1);
+		free(tmp);
+		free(tmp1);
+		free(n);
+		if (global->texture[i] == NULL)
+		{
+			fprintf(stderr, "Texture error");
+			exit(1);
+		}
+	}
+	add_texture2(global, i);
 }
 
 void			init_sdl(t_global *global)
 {
+	t_tools ij;
+
+	ij.x = -1;
 	bzero(global->text, 9);
 	global->map = (unsigned int**)malloc(global->mode * sizeof(unsigned int*));
-	for(int i = 0;i < global->mode;i++)
+	while (++ij.x < global->mode)
 	{
-		global->map[i] = (unsigned int*)malloc(global->mode * sizeof(unsigned int));
-		for (int j = 0; j < global->mode; j++)
-			global->map[i][j] = 0;
+		global->map[ij.x] = (unsigned int*)malloc(global->mode
+		* sizeof(unsigned int));
+		ij.y = -1;
+		while (++ij.y < global->mode)
+			global->map[ij.x][ij.y] = 0;
 	}
 	global->window = SDL_CreateWindow("MAP",
 	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 	WIN_X, WIN_Y, SDL_WINDOW_SHOWN);
 	global->renderer = SDL_CreateRenderer(global->window,
 		-1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	global->pos = 0;
-	global->x1 = 0;
-	global->y1 = 0;
 	global->x2 = 110;
 	global->y2 = 110;
 	global->drawing = 0;
@@ -542,7 +607,6 @@ void			global_pos_2_write(t_global *global)
 	if (strcmp(SDL_GetKeyName(global->event.key.keysym.sym),
 	"Return") == 0)
 	{
-		ft_putnbr(abs(atoi(global->text)));
 		if ((global->lines->height = abs(atoi(global->text))) > 300)
 			global->lines->height = 300;
 		if (global->pos != 6)
@@ -552,15 +616,17 @@ void			global_pos_2_write(t_global *global)
 	}
 }
 
-int 			find_closest_wall(t_global *global)
+int				find_closest_wall(t_global *global)
 {
 	t_line *cur;
 
 	cur = global->lines;
 	while (cur)
 	{
-		if (((cur->x1 - 100) / global->xmode) == ((global->x1 - 100) / global->xmode) && 
-			((cur->y1 - 100) / global->ymode) == ((global->y1 - 100) / global->ymode))
+		if (((cur->x1 - 100) / global->xmode) == ((global->x1 - 100) /
+		global->xmode) &&
+			((cur->y1 - 100) / global->ymode) == ((global->y1 - 100) /
+			global->ymode))
 		{
 			global->to_edit = cur;
 			return (1);
@@ -602,12 +668,22 @@ void			global_pos_3_edit(t_global *global)
 
 void			draw_grid(t_global global)
 {
-	for (int x = 100; x < 1300; x += global.xmode)
-		for (int y = 100; y < 900; y+= global.ymode)
+	int x;
+	int y;
+
+	x = 100;
+	y = 100;
+	while (x < 1300)
+	{
+		y = 100;
+		while (y < 900)
 		{
 			SDL_RenderDrawLine(global.renderer, x, y, x + global.xmode, y);
 			SDL_RenderDrawLine(global.renderer, x, y, x, y + global.ymode);
+			y += global.ymode;
 		}
+		x += global.xmode;
+	}
 }
 
 void			redraw(t_global *global)
@@ -630,7 +706,7 @@ void			redraw(t_global *global)
 	put_text("Save to file", 805, *global, 1450);
 	set_rect_for_texture(global);
 	SDL_SetRenderDrawColor(global->renderer, 255, 255, 255, 0);
-	draw_grid(*global);		
+	draw_grid(*global);
 	draw_lines(*global);
 	draw_lines_rect(*global);
 	SDL_RenderPresent(global->renderer);
@@ -655,64 +731,66 @@ void			chech_for_d_t_h(t_global *global)
 	}
 }
 
+void			global_pos_0(t_global *global)
+{
+	pos_0_pick_tex(global);
+}
+
+void			global_pos_1(t_global *global)
+{
+	pos_1_set_dot(global);
+}
+
+void			global_pos_2(t_global *global)
+{
+	if (global->event.type == SDL_TEXTINPUT)
+		strcat(global->text, global->event.text.text);
+}
+
+void			global_pos_26(t_global *global)
+{
+	global_pos_2_write(global);
+}
+
+void			global_pos_3(t_global *global)
+{
+	global_pos_3_edit(global);
+}
+
+void			global_pos_5(t_global *global)
+{
+	global->current_texture = -1;
+	pos_0_pick_tex(global);
+	if (global->current_texture >= 0)
+	{
+		global->lines->texture_number = global->current_texture;
+		global->pos = 0;
+	}
+}
+
 void			event(t_global *global)
 {
-	int i;
-
-	i = 0;
 	if (global->event.type == SDL_QUIT)
 		global->done = SDL_TRUE;
 	if (global->pos == 0)
-	{
-		if (!i)
-		{
-			redraw(global);
-			i++;
-		}
-		pos_0_pick_tex(global);
-	}
+		global_pos_0(global);
 	else if (global->pos == 1)
-	{
-		pos_1_set_dot(global);
-		redraw(global);
-	}
-	else if ((global->pos == 2 || global->pos == 6) && strlen(global->text) <= 2)
-	{
-		if (global->event.type == SDL_TEXTINPUT)
-		{
-			strcat(global->text, global->event.text.text);
-			redraw(global);
-		}
-	}
+		global_pos_1(global);
+	else if ((global->pos == 2 || global->pos == 6) &&
+	strlen(global->text) <= 2)
+		global_pos_2(global);
 	if (global->pos == 2 || global->pos == 6)
-	{
-		global_pos_2_write(global);
-		redraw(global);
-		i = 0;
-	}
+		global_pos_26(global);
 	if (global->pos == 3)
-	{
-		global_pos_3_edit(global);
-		redraw(global);
-		i = 0;
-	}
+		global_pos_3(global);
 	if (global->pos == 4)
 	{
-		i = 1;
 		chech_for_d_t_h(global);
 		redraw(global);
 	}
 	if (global->pos == 5)
-	{
-		global->current_texture = -1;
-		pos_0_pick_tex(global);
-		if (global->current_texture >= 0)
-		{
-			global->lines->texture_number = global->current_texture;
-			global->pos = 0;
-		}
-		redraw(global);
-	}
+		global_pos_5(global);
+	redraw(global);	
 }
 
 void			loop(t_global global)
@@ -737,7 +815,7 @@ int				words_len(char **cords)
 	return (i);
 }
 
-void	free_words(char **words)
+void			free_words(char **words)
 {
 	int i;
 
@@ -760,51 +838,19 @@ void			create_file(char *s, t_global *global)
 		exit(0);
 }
 
-void			edit_file(char *s, t_global *global)
+void			chech_lines(t_global *global, int lines)
 {
-	char *line;
-	char **cords;
-	int	lines;
+	char	*line;
+	char	**cords;
 	t_line	wall;
 
-	line = NULL;
-	cords = NULL;
-	if (!*s)
-		exit(0);
-	global->fd = open(s, O_RDONLY);
-	if (global->fd <= 0)
-		exit(0);
-	int i = ft_get_next_line(global->fd, &line);
-	if (!i)
-		exit(0);
-	cords = ft_strsplit(line, ' ');
-	if (words_len(cords) != 2)
-	{
-		ft_putstr_fd("[ERROR][WRONG FIRST LINE]\n", 2);
-		free_words(cords);
-		free(line);
-		exit(0);
-	}
-	lines = ft_atoi(cords[0]);
-	int q = ft_atoi(cords[1]);
-	if (q != global->mode)
-		exit(0);
-	free_words(cords);
-	free(line);
-	if (lines)
-		global->z = 1;
-	while(lines--)
+	while (lines--)
 	{
 		if (!ft_get_next_line(global->fd, &line))
 			exit(0);
 		cords = ft_strsplit(line, ' ');
 		if (words_len(cords) != 6)
-		{
-			free_words(cords);
-			free(line);
 			exit(0);
-		}
-		ft_putnbr(words_len(cords));
 		if ((wall.texture_number = (abs(ft_atoi(cords[0])))) >= 16)
 			exit(0);
 		wall.x1 = abs(ft_atoi(cords[1]));
@@ -817,55 +863,84 @@ void			edit_file(char *s, t_global *global)
 		free_words(cords);
 		free(line);
 	}
+}
+
+void			edit_file(char *s, t_global *global)
+{
+	char *line;
+	char **cords;
+
+	line = NULL;
+	cords = NULL;
+	if (!*s)
+		exit(0);
+	if ((global->fd = open(s, O_RDONLY)) <= 0)
+		exit(0);
+	if (!(ft_get_next_line(global->fd, &line)))
+		exit(0);
+	cords = ft_strsplit(line, ' ');
+	if (words_len(cords) != 2)
+		exit(0);
+	if ((ft_atoi(cords[1]) != global->mode))
+		exit(0);
+	free_words(cords);
+	free(line);
+	if (ft_atoi(cords[0]))
+		global->z = 1;
+	chech_lines(global, ft_atoi(cords[0]));
 	close(global->fd);
 	create_file(s, global);
+}
+
+void			set_global_mode(t_global *global)
+{
+	if (global->mode == 10)
+	{
+		global->xmode = 120;
+		global->ymode = 80;
+	}
+	else
+	{
+		global->xmode = 24;
+		global->ymode = 16;
+	}
+}
+
+void			ac_4(t_global *global, char **av)
+{
+	global->z = 0;
+	if (ft_atoi(av[1]) == 10 || ft_atoi(av[1]) == 50)
+		global->mode = ft_atoi(av[1]);
+	else
+		exit(0);
+	if (ft_strcmp(av[2], "-n") == 0)
+		create_file(av[3], global);
+	else if (ft_strcmp(av[2], "-e") == 0)
+		edit_file(av[3], global);
+	else
+		exit(0);
 }
 
 int				main(int ac, char **av)
 {
 	t_global global;
 
-	global.z = 0;
 	if (ac == 4)
-	{
-		if (ft_atoi(av[1]) == 10 || ft_atoi(av[1]) == 50)
-			global.mode = ft_atoi(av[1]);
-		if (ft_strcmp(av[2], "-n") == 0)
-			create_file(av[3], &global);
-		else if (ft_strcmp(av[2], "-e") == 0)
-		{
-			edit_file(av[3], &global);
-		}
-		else
-			return (0);
-	}
+		ac_4(&global, av);
 	else
 	{
-		printf("Usage: ./map [grid size] [-n || -e] [filename]\n");
+		ft_putstr("Usage: ./map [grid size] [-n || -e] [filename]\n");
 		return (0);
 	}
-	if (global.mode == 10)
-	{
-		global.xmode = 120;
-		global.ymode = 80;
-	}
-	else
-	{
-		global.xmode = 24;
-		global.ymode = 16;
-	}
+	set_global_mode(&global);
 	if (SDL_Init(SDL_INIT_VIDEO) == 0)
 	{
 		init_sdl(&global);
 		loop(global);
 		if (global.renderer)
-		{
 			SDL_DestroyRenderer(global.renderer);
-		}
 		if (global.window)
-		{
 			SDL_DestroyWindow(global.window);
-		}
 	}
 	TTF_Quit();
 	SDL_Quit();
