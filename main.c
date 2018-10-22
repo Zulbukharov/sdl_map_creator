@@ -6,7 +6,7 @@
 /*   By: azulbukh <azulbukh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/09/03 15:35:47 by azulbukh          #+#    #+#             */
-/*   Updated: 2018/10/21 20:51:41 by azulbukh         ###   ########.fr       */
+/*   Updated: 2018/10/22 15:59:29 by azulbukh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,7 +274,10 @@ void			make_exit(t_line **lines, t_global *global)
 		ft_putstr_fd(" ", global->fd);
 		ft_putnbr_fd(cur->y2, global->fd);
 		ft_putstr_fd(" ", global->fd);
-		ft_putnbr_fd(cur->height, global->fd);
+		if (abs(cur->height) > 300)
+			ft_putnbr_fd(300, global->fd);
+		else
+			ft_putnbr_fd(abs(cur->height), global->fd);
 		ft_putstr_fd("\n", global->fd);
 		cur = cur->next;
 	}
@@ -769,7 +772,11 @@ void			edit_file(char *s, t_global *global)
 	if (!*s)
 		exit(0);
 	global->fd = open(s, O_RDONLY);
-	ft_get_next_line(global->fd, &line);
+	if (global->fd <= 0)
+		exit(0);
+	int i = ft_get_next_line(global->fd, &line);
+	if (!i)
+		exit(0);
 	cords = ft_strsplit(line, ' ');
 	if (words_len(cords) != 2)
 	{
@@ -779,13 +786,16 @@ void			edit_file(char *s, t_global *global)
 		exit(0);
 	}
 	lines = ft_atoi(cords[0]);
+	int q = ft_atoi(cords[1]);
+	if (q != global->mode)
+		exit(0);
 	free_words(cords);
 	free(line);
 	if (lines)
 		global->z = 1;
 	while(lines--)
 	{
-		if (!ft_get_next_line(global->fd, &line) && lines)
+		if (!ft_get_next_line(global->fd, &line))
 			exit(0);
 		cords = ft_strsplit(line, ' ');
 		if (words_len(cords) != 6)
@@ -795,16 +805,20 @@ void			edit_file(char *s, t_global *global)
 			exit(0);
 		}
 		ft_putnbr(words_len(cords));
-		wall.texture_number = (ft_atoi(cords[0]));
-		wall.x1 = ft_atoi(cords[1]);
-		wall.y1 = ft_atoi(cords[2]);
-		wall.x2 = ft_atoi(cords[3]);
-		wall.y2 = ft_atoi(cords[4]);
-		wall.height = ft_atoi(cords[5]);
+		if ((wall.texture_number = (abs(ft_atoi(cords[0])))) >= 16)
+			exit(0);
+		wall.x1 = abs(ft_atoi(cords[1]));
+		wall.y1 = abs(ft_atoi(cords[2]));
+		wall.x2 = abs(ft_atoi(cords[3]));
+		wall.y2 = abs(ft_atoi(cords[4]));
+		if ((wall.height = abs(ft_atoi(cords[5]))) > 300)
+			exit(0);
 		push_to_front(&global->lines, &wall);
 		free_words(cords);
 		free(line);
 	}
+	close(global->fd);
+	create_file(s, global);
 }
 
 int				main(int ac, char **av)
@@ -819,7 +833,9 @@ int				main(int ac, char **av)
 		if (ft_strcmp(av[2], "-n") == 0)
 			create_file(av[3], &global);
 		else if (ft_strcmp(av[2], "-e") == 0)
+		{
 			edit_file(av[3], &global);
+		}
 		else
 			return (0);
 	}
